@@ -9,6 +9,20 @@
 	flex-direction: row;
 }
 
+.custom-button {
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    height: 100%;
+    cursor: pointer;
+    color: var(--vscode-titleBar-activeForeground);
+}
+
+.custom-button:hover {
+    background-color: var(--vscode-titleBar-activeBackground, rgba(255, 255, 255, 0.1));
+}
+
+
 .monaco-workbench.mac .part.titlebar {
 	flex-direction: row-reverse;
 }

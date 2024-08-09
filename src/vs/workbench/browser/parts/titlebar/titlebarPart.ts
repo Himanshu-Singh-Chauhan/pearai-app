@@ -21,12 +21,12 @@ import { isMacintosh, isWindows, isLinux, isWeb, isNative, platformLocale } from
 import { Color } from 'vs/base/common/color';
 import { EventType, EventHelper, Dimension, append, $, addDisposableListener, prepend, reset, getWindow, getWindowId, isAncestor, getActiveDocument, isHTMLElement } from 'vs/base/browser/dom';
 import { CustomMenubarControl } from 'vs/workbench/browser/parts/titlebar/menubarControl';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
+import { IInstantiationService, ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { Emitter, Event } from 'vs/base/common/event';
 import { IStorageService, StorageScope } from 'vs/platform/storage/common/storage';
 import { Parts, IWorkbenchLayoutService, ActivityBarPosition, LayoutSettings, EditorActionsLocation, EditorTabsMode } from 'vs/workbench/services/layout/browser/layoutService';
 import { createActionViewItem, createAndFillInActionBarActions } from 'vs/platform/actions/browser/menuEntryActionViewItem';
-import { Action2, IMenu, IMenuService, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
+import { Action2, IMenu, IMenuService, MenuId, MenuRegistry, registerAction2 } from 'vs/platform/actions/common/actions';
 import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IHostService } from 'vs/workbench/services/host/browser/host';
 import { Codicon } from 'vs/base/common/codicons';
@@ -447,6 +447,8 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 			this.createActionToolBarMenus();
 		}
 
+		this.createCustomButton();
+
 		let primaryControlLocation = isMacintosh ? 'left' : 'right';
 		if (isMacintosh && isNative) {
 
@@ -550,6 +552,23 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		return this.keybindingService.lookupKeybinding(action.id, editorPaneAwareContextKeyService);
 	}
 
+	private customButton: HTMLElement | undefined;
+
+
+	private createCustomButton(): void {
+		this.customButton = $('div.custom-button', { title: 'Custom Button' });
+		this.customButton.textContent = 'Docs';
+		this.customButton.addEventListener('click', () => {
+			// Add your custom action here
+			console.log('Custom button clicked');
+		});
+
+		if (this.rightContent) {
+			prepend(this.rightContent, this.customButton);
+		}
+	}
+
+
 	private createActionToolBar() {
 
 		// Creates the action tool bar. Depends on the configuration of the title bar menus
@@ -569,6 +588,10 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 			actionViewItemProvider: (action, options) => this.actionViewItemProvider(action, options),
 			hoverDelegate: this.hoverDelegate
 		}));
+
+		if (this.customButton && this.actionToolBarElement.parentElement) {
+			this.actionToolBarElement.parentElement.insertBefore(this.customButton, this.actionToolBarElement);
+		}
 
 		if (this.editorActionsEnabled) {
 			this.actionToolBarDisposable.add(this.editorGroupsContainer.onDidChangeActiveGroup(() => this.createActionToolBarMenus({ editorActions: true })));
@@ -645,6 +668,18 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 
 			if (this.layoutControlEnabled) {
 				this.layoutToolbarMenu = this.menuService.createMenu(MenuId.LayoutControlMenu, this.contextKeyService);
+
+				 // Add the custom action to the layout menu
+				//  this.layoutToolbarMenuDisposables.add(this.layoutToolbarMenu.addAction({
+                //     id: CustomTitleBarAction.ID,
+                //     label: 'Custom',
+                //     run: () => {
+                //         this.instantiationService.invokeFunction(accessor => {
+                //             const action = new CustomTitleBarAction();
+                //             action.run(accessor);
+                //         });
+                //     }
+                // }));
 
 				this.layoutToolbarMenuDisposables.add(this.layoutToolbarMenu);
 				this.layoutToolbarMenuDisposables.add(this.layoutToolbarMenu.onDidChange(() => updateToolBarActions()));
@@ -865,3 +900,35 @@ export class AuxiliaryBrowserTitlebarPart extends BrowserTitlebarPart implements
 		return getZoomFactor(getWindow(this.element)) < 1 || !this.mainTitlebar.hasZoomableElements;
 	}
 }
+
+
+// Add this class definition somewhere in the file, outside of any existing class
+class CustomTitleBarAction extends Action2 {
+    static readonly ID = 'workbench.action.customTitleBarAction';
+
+    constructor() {
+        super({
+            id: CustomTitleBarAction.ID,
+            title: { value: 'Custom Action', original: 'Custom Action' },
+            category: Categories.View,
+            f1: true,
+        });
+    }
+
+    run(accessor: ServicesAccessor): void {
+        // Add your custom action logic here
+        console.log('Custom title bar action executed');
+    }
+}
+
+// Register the action
+registerAction2(CustomTitleBarAction);
+
+// Register the action in the LayoutControlMenu
+MenuRegistry.appendMenuItem(MenuId.LayoutControlMenu, {
+    command: {
+        id: CustomTitleBarAction.ID,
+        title: 'Custom'
+    },
+    order: 1 // Adjust this value to change the position of the action in the menu
+});
