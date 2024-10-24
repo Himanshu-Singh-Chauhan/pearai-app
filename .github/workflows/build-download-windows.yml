@@ -40,7 +40,7 @@ jobs:
           $username = [Environment]::UserName
           Get-ChildItem "C:\Users\$username\Desktop"
 
-      # Step 5: Check for build output and set output variable
+      # Step 5: Verify Build Output and Set Output Variable
       - name: Verify Build Output
         id: verify-output
         run: |
@@ -50,21 +50,13 @@ jobs:
             Write-Error "Build output not found at $buildOutput"
           } else {
             Write-Host "Build output found at $buildOutput"
-            echo "::set-output name=build_path::$buildOutput"  # Set output variable
+            echo "BUILD_PATH=$buildOutput" >> $GITHUB_ENV  # Set the environment variable for later steps
           }
 
       # Step 6: Upload the folder as an artifact
       - name: Upload Build Artifact
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4  # Updated to use v4
         with:
           name: vscode-windows-build
-          path: ${{ steps.verify-output.outputs.build_path }}  # Use the output variable here
-          
-      # Step 7: Upload the folder 2 as an artifact
-      - name: Upload Build Artifact
-        if: success()
-        uses: actions/upload-artifact@v3
-        with:
-          name: vscode-windows-build
-          path: output/vscode-win32-x64
+          path: ${{ env.BUILD_PATH }}  # Use the environment variable here
