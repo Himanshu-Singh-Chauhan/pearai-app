@@ -1,6 +1,6 @@
 name: Build and Download VSCode Windows Artifact
 
-# Trigger when changes are merged into this branch (replace with your custom branch name)
+# Trigger when changes are merged into this branch
 on:
   push:
     branches:
@@ -24,7 +24,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          
+
       # Step 3: Create a dummy folder and a temporary text file
       - name: Create Dummy Folder for Testing
         run: |
@@ -33,22 +33,19 @@ jobs:
           mkdir -Force $dummyOutput
           Set-Content -Path "$dummyOutput\temp.txt" -Value "This is a temporary test file."  # Create a temp text file
 
-      # Step 4: Compress built files into a zip archive
-      - name: Compress built files
+      # Step 4: Check for build output
+      - name: Verify Build Output
         run: |
           $username = [Environment]::UserName  # Get the current user's name
-          $buildOutput = "C:\Users\$username\Desktop\vscode-win32-x64"  # Corrected path for build output
-          if (Test-Path $buildOutput) {
-            mkdir -Force output
-            Compress-Archive -Path "$buildOutput\*" -DestinationPath output/vscode-win32-x64.zip
-          } else {
+          $buildOutput = "C:\Users\$username\Desktop\vscode-win32-x64"
+          if (-Not (Test-Path $buildOutput)) {
             Write-Error "Build output not found at $buildOutput"
           }
 
-      # Step 5: Upload the zip file as an artifact for download
+      # Step 5: Upload the folder as an artifact
       - name: Upload Build Artifact
         if: success()
         uses: actions/upload-artifact@v3
         with:
           name: vscode-windows-build
-          path: output/vscode-win32-x64.zip
+          path: C:\Users\$username\Desktop\vscode-win32-x64
