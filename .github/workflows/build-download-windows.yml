@@ -36,11 +36,17 @@ jobs:
       # Step 5: Compress built files into a zip archive
       - name: Compress built files
         run: |
-          mkdir -Force output
-          Compress-Archive -Path ./out/vscode-win32-x64/* -DestinationPath output/vscode-win32-x64.zip
+          $buildOutput = "C:\Users\runneradmin\Desktop\vscode-win32-x64"  # Corrected path for build output
+          if (Test-Path $buildOutput) {
+            mkdir -Force output
+            Compress-Archive -Path "$buildOutput\*" -DestinationPath output/vscode-win32-x64.zip
+          } else {
+            Write-Error "Build output not found at $buildOutput"
+          }
 
       # Step 6: Upload the zip file as an artifact for download
       - name: Upload Build Artifact
+        if: success()
         uses: actions/upload-artifact@v3
         with:
           name: vscode-windows-build
