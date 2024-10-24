@@ -48,6 +48,7 @@ jobs:
           $buildOutput = "C:\Users\$username\Desktop\vscode-win32-x64"
           if (-Not (Test-Path $buildOutput)) {
             Write-Error "Build output not found at $buildOutput"
+            exit 1  # Exit with an error to stop the job
           } else {
             Write-Host "Build output found at $buildOutput"
             echo "BUILD_PATH=$buildOutput" >> $GITHUB_ENV  # Set the environment variable for later steps
@@ -55,7 +56,7 @@ jobs:
 
       # Step 6: Upload the folder as an artifact
       - name: Upload Build Artifact
-        if: success()
+        if: success() && steps.verify-output.outputs.BUILD_PATH  # Ensure the path is valid
         uses: actions/upload-artifact@v4  # Updated to use v4
         with:
           name: vscode-windows-build
