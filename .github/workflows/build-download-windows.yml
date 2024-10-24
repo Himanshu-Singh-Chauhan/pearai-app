@@ -33,19 +33,27 @@ jobs:
           mkdir -Force $dummyOutput
           Set-Content -Path "$dummyOutput\temp.txt" -Value "This is a temporary test file."  # Create a temp text file
 
-      # Step 4: Check for build output
+      # Step 4: List Desktop Contents for Debugging
+      - name: List Desktop Directory
+        run: |
+          $username = [Environment]::UserName
+          Get-ChildItem "C:\Users\$username\Desktop"
+
+      # Step 5: Check for build output
       - name: Verify Build Output
         run: |
           $username = [Environment]::UserName  # Get the current user's name
           $buildOutput = "C:\Users\$username\Desktop\vscode-win32-x64"
           if (-Not (Test-Path $buildOutput)) {
             Write-Error "Build output not found at $buildOutput"
+          } else {
+            Write-Host "Build output found at $buildOutput"
           }
 
-      # Step 5: Upload the folder as an artifact
+      # Step 6: Upload the folder as an artifact
       - name: Upload Build Artifact
         if: success()
         uses: actions/upload-artifact@v3
         with:
           name: vscode-windows-build
-          path: buildOutput
+          path: C:\Users\$username\Desktop\vscode-win32-x64  # Corrected path without double quotes
