@@ -32,6 +32,7 @@ jobs:
           $dummyOutput = "C:\Users\$username\Desktop\vscode-win32-x64"
           mkdir -Force $dummyOutput
           Set-Content -Path "$dummyOutput\temp.txt" -Value "This is a temporary test file."  # Create a temp text file
+          Write-Output "$dummyOutput"  # Output the path for later use
 
       # Step 4: List Desktop Contents for Debugging
       - name: List Desktop Directory
@@ -39,8 +40,9 @@ jobs:
           $username = [Environment]::UserName
           Get-ChildItem "C:\Users\$username\Desktop"
 
-      # Step 5: Check for build output
+      # Step 5: Check for build output and set output variable
       - name: Verify Build Output
+        id: verify-output
         run: |
           $username = [Environment]::UserName  # Get the current user's name
           $buildOutput = "C:\Users\$username\Desktop\vscode-win32-x64"
@@ -48,6 +50,7 @@ jobs:
             Write-Error "Build output not found at $buildOutput"
           } else {
             Write-Host "Build output found at $buildOutput"
+            echo "::set-output name=build_path::$buildOutput"  # Set output variable
           }
 
       # Step 6: Upload the folder as an artifact
@@ -56,4 +59,12 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: vscode-windows-build
-          path: C:\Users\$username\Desktop\vscode-win32-x64  # Corrected path without double quotes
+          path: ${{ steps.verify-output.outputs.build_path }}  # Use the output variable here
+          
+      # Step 7: Upload the folder 2 as an artifact
+      - name: Upload Build Artifact
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: vscode-windows-build
+          path: output/vscode-win32-x64
