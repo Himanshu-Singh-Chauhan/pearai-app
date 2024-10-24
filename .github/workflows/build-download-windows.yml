@@ -1,0 +1,47 @@
+name: Build and Download VSCode Windows Artifact
+
+# Trigger when changes are merged into this branch (replace with your custom branch name)
+on:
+  push:
+    branches:
+      - workflow-windows-build  # Replace with your branch name
+
+jobs:
+  windows:
+    name: Build VSCode for Windows
+    runs-on: windows-2022
+    timeout-minutes: 60
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Setup Node.js environment
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      # Step 3: Install dependencies using Yarn
+      - name: Install dependencies
+        run: yarn install --network-timeout 180000
+
+      # Step 4: Build VSCode for Windows (64-bit)
+      - name: Build VSCode for Windows
+        run: yarn gulp vscode-win32-x64
+
+      # Step 5: Compress built files into a zip archive
+      - name: Compress built files
+        run: |
+          mkdir -Force output
+          Compress-Archive -Path ./out/vscode-win32-x64/* -DestinationPath output/vscode-win32-x64.zip
+
+      # Step 6: Upload the zip file as an artifact for download
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: vscode-windows-build
+          path: output/vscode-win32-x64.zip
