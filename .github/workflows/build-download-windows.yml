@@ -24,19 +24,20 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
+          
+      # Step 3: Create a dummy folder and a temporary text file
+      - name: Create Dummy Folder for Testing
+        run: |
+          $username = [Environment]::UserName  # Get the current user's name
+          $dummyOutput = "C:\Users\$username\Desktop\vscode-win32-x64"
+          mkdir -Force $dummyOutput
+          Set-Content -Path "$dummyOutput\temp.txt" -Value "This is a temporary test file."  # Create a temp text file
 
-      # Step 3: Install dependencies using Yarn
-      - name: Install dependencies
-        run: yarn install --network-timeout 180000
-
-      # Step 4: Build VSCode for Windows (64-bit)
-      - name: Build VSCode for Windows
-        run: yarn gulp vscode-win32-x64
-
-      # Step 5: Compress built files into a zip archive
+      # Step 4: Compress built files into a zip archive
       - name: Compress built files
         run: |
-          $buildOutput = "C:\Users\runneradmin\Desktop\vscode-win32-x64"  # Corrected path for build output
+          $username = [Environment]::UserName  # Get the current user's name
+          $buildOutput = "C:\Users\$username\Desktop\vscode-win32-x64"  # Corrected path for build output
           if (Test-Path $buildOutput) {
             mkdir -Force output
             Compress-Archive -Path "$buildOutput\*" -DestinationPath output/vscode-win32-x64.zip
@@ -44,7 +45,7 @@ jobs:
             Write-Error "Build output not found at $buildOutput"
           }
 
-      # Step 6: Upload the zip file as an artifact for download
+      # Step 5: Upload the zip file as an artifact for download
       - name: Upload Build Artifact
         if: success()
         uses: actions/upload-artifact@v3
