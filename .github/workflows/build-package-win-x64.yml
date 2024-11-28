@@ -1,18 +1,24 @@
 name: Build Package Download Win x64
 
-# # Manual trigger
-# on:
-#   workflow_dispatch:
-#     inputs:
-#       branch:
-#         description: 'Branch to build'
-#         required: true
-#         default: 'build-package-windows'
-# for testing
+# Manual trigger
 on:
-  push:
-    branches:
-      - build-package-windows
+  workflow_dispatch:
+    inputs:
+      main-commit-hash:
+        description: 'Main commit hash to build'
+        required: false
+      submodule-commit-hash:
+        description: 'Submodule commit hash to build'
+        required: false
+      focus-build:
+        description: 'Focus build'
+        required: false
+        type: boolean
+# for testing
+# on:
+#   push:
+#     branches:
+#       - him/build-package-windows
 
 jobs:
   windows:
@@ -27,28 +33,58 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Setup Node.js environment
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
+      # # Step 2: Setup Node.js environment
+      # - name: Setup Node.js
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version-file: .nvmrc
 
-      # Step 3: Create a dummy folder and a temporary text file
-      - name: Create Dummy Folder for Testing
+
+      # Step 2: Set Build Path
+      - name: Set Build Path
+        id: set-path
         run: |
-          $username = [Environment]::UserName  # Get the current user's name
-          $dummyOutput = "C:\Users\$username\Desktop\vscode-win32-x64"
-          mkdir -Force $dummyOutput
-          Set-Content -Path "$dummyOutput\temp.txt" -Value "This is a temporary test file."  # Create a temp text file
-          Write-Output "$dummyOutput"  # Output the path for later use
+          $username = [Environment]::UserName
+          $buildOutput = "C:\Users\$username\Desktop\vscode-win32-x64"
+          echo "build_path=$buildOutput" >> $env:GITHUB_OUTPUT
 
-      # Step 4: List Desktop Contents for Debugging
+      # Step 3: Cache the build output
+      # sdf
+      - name: Cache Build Output
+        id: cache-restore
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.set-path.outputs.build_path }}
+          key: vscode-win-x64-${{ github.sha }}
+          restore-keys: |
+            vscode-win-x64-${{ github.sha }}
+
+      # Optional: Debug step to check cache status
+      - name: Debug - Check Cache Status
+        run: |
+          $buildCacheHit = ${{ steps.cache-restore.outputs.cache-hit }}
+          Write-Host "Raw cache-hit value: $buildCacheHit"
+          echo "build_cache_hit=$buildCacheHit" >> $env:GITHUB_OUTPUT
+          if ($buildCacheHit -eq "true") {
+            Write-Host "Cache hit!"
+          } else {
+            Write-Host "Cache miss!"
+          }
+
+      # Step 5: Create a dummy folder and a temporary text file (if cache miss)
+      - name: Create Dummy Folder for Testing
+        if: ${{ !steps.cache-restore.outputs.cache-hit }}
+        run: |
+          .\.github\workflows\testenv.ps1
+
+
+      # Step 5: List Desktop Contents for Debugging
       - name: List Desktop Directory
         run: |
           $username = [Environment]::UserName
           Get-ChildItem "C:\Users\$username\Desktop"
 
-      # Step 5: Verify Build Output and Set Output Variable
+      # Step 6: Verify Build Output and Set Output Variable
       - name: Verify Build Output
         id: verify-output
         run: |
@@ -59,12 +95,22 @@ jobs:
             exit 1  # Exit with an error to stop the job
           } else {
             Write-Host "Build output found at $buildOutput"
-            echo "BUILD_PATH=$buildOutput" >> $GITHUB_ENV  # Set the environment variable for later steps
+            echo "build_path=$buildOutput" >> $env:GITHUB_OUTPUT  # Set the output variable
           }
 
-      # Step 6: Upload the Build Output
+      # Step 7: Upload the Build Output (Zipped)
       - name: Upload Build Output
         uses: actions/upload-artifact@v4
         with:
           name: vscode-win32-x64
-          path: $buildOutput
+          path: ${{ steps.verify-output.outputs.build_path }}
+
+      # Optional: Debug step to verify file
+      - name: Debug - Check File Existence
+        run: |
+          $filepath = "${{ steps.verify-output.outputs.build_path }}\temp.txt"
+          if (Test-Path $filepath) {
+            Write-Host "File exists at: $filepath"
+          } else {
+            Write-Host "File not found at: $filepath"
+          }
