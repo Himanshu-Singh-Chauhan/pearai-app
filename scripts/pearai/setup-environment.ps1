@@ -21,8 +21,7 @@ function Initialize-BaseFunctionality {
     Invoke-CMD -Command "git submodule update --recursive --remote" -ErrorMessage "Failed to update to latest tip of submodule"
 
     Create-SymLink
-    ls ./extensions
-    ls ./extensions/pearai-submodule
+
     Set-Location .\extensions\pearai-submodule
 
     # Checkout main - because submodule update leaves detached head.
