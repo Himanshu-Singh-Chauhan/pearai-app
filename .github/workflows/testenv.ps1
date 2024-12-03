@@ -1,5 +1,16 @@
+# GitHub Action Input Variables
+param (
+	[bool]$IS_GITHUB_ACTION = $false,
+    [string]$Input_PearappCommitHash = $null,
+    [string]$Input_SubmoduleCommitHash = $null,
+	[string]$Input_CustomPearappVersion = $null,
+    [bool]$Input_ForceBuild = $false
+)
+
 # Print GitHub Environment Variables
 Write-Host "GitHub Environment Variables:"
+Write-Host "IS_GITHUB_ACTION: $env:GITHUB_ACTION"
+Write-Host "IS_GITHUB_ACTION: $env:GITHUB_ACTIONS"
 Write-Host "GITHUB_WORKSPACE: $env:GITHUB_WORKSPACE"
 Write-Host "GITHUB_SHA: $env:GITHUB_SHA"
 Write-Host "GITHUB_REF: $env:GITHUB_REF"
@@ -15,25 +26,25 @@ Write-Host "build_path: $env:build_path"
 Write-Host "build_cache_hit: $env:build_cache_hit"
 Write-Host "needs_rebuild: $env:needs_rebuild"
 
-# Print all environment variables (optional)
-Write-Host "`nAll Environment Variables:"
-Get-ChildItem env: | ForEach-Object {
-    Write-Host "$($_.Name): $($_.Value)"
+# Print Workflow Input Variables
+Write-Host "`nWorkflow Input Variables:"
+Write-Host "IS_GITHUB_ACTION: $IS_GITHUB_ACTION"
+Write-Host "pearapp_commit_hash: $Input_PearappCommitHash"
+Write-Host "submodule_commit_hash: $Input_SubmoduleCommitHash"
+Write-Host "custom_pearapp_version: $Input_CustomPearappVersion"
+Write-Host "force_build: $Input_ForceBuild"
+
+# # Print all environment variables (optional)
+# Write-Host "`nAll Environment Variables:"
+# Get-ChildItem env: | ForEach-Object {
+#     Write-Host "$($_.Name): $($_.Value)"
+# }
+
+cd $env:GITHUB_WORKSPACE
+$pearaiRefDir = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "/extensions/pearai-ref"
+if (Test-Path $pearaiRefDir) {
+	Write-Host "Removing pearai-ref directory"
+    Remove-Item $pearaiRefDir -Recurse -Force
 }
 
-
-if ($env:build_cache_hit -eq "true") {
-    Write-Host "Cache hit!"
-} else {
-    Write-Host "Cache miss!"
-}
-
-# Create dummy folder and file
-$username = [Environment]::UserName
-$dummyOutput = $env:build_path  # Access the environment variable directly
-mkdir -Force $dummyOutput
-Set-Content -Path "$dummyOutput\temp.txt" -Value "This is a temporary test file."
-
-Write-Host "Created dummy folder at: $dummyOutput"
-Write-Host "Created temp.txt inside the folder"
-
+yarn gulp vscode-win32-x64

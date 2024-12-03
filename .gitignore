@@ -26,3 +26,6 @@ extensions/pearai-ref
 .prompts
 .aider*
 .env
+
+# inno setup
+*.e32

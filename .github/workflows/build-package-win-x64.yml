@@ -4,14 +4,18 @@ name: Build Package Download Win x64
 on:
   workflow_dispatch:
     inputs:
-      main-commit-hash:
-        description: 'Main commit hash to build'
+      pearapp-commit-hash:
+        description: 'PearApp commit hash to build (optional)'
         required: false
       submodule-commit-hash:
-        description: 'Submodule commit hash to build'
+        description: 'Submodule commit hash to build (optional)'
         required: false
-      focus-build:
-        description: 'Focus build'
+      custom-pearapp-version:
+        description: 'Custom PearApp version (optional) specify if latest commits are only version bump (skips pearai-app build unless force-build is checked or cache expired)'
+        required: false
+        type: string
+      force-build:
+        description: 'Force build (optional)'
         required: false
         type: boolean
 # for testing
@@ -24,65 +28,97 @@ jobs:
   windows:
     name: Build VSCode for Windows x64
     runs-on: windows-2022
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-      # Step 1: Checkout the repository
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # # Step 2: Setup Node.js environment
-      # - name: Setup Node.js
-      #   uses: actions/setup-node@v4
-      #   with:
-      #     node-version-file: .nvmrc
-
-
-      # Step 2: Set Build Path
-      - name: Set Build Path
-        id: set-path
-        run: |
-          $username = [Environment]::UserName
-          $buildOutput = "C:\Users\$username\Desktop\vscode-win32-x64"
-          echo "build_path=$buildOutput" >> $env:GITHUB_OUTPUT
-
-      # Step 3: Cache the build output
-      # sdf
-      - name: Cache Build Output
-        id: cache-restore
-        uses: actions/cache@v4
+      # Checkout the repository
+      - uses: actions/checkout@v4
         with:
-          path: ${{ steps.set-path.outputs.build_path }}
-          key: vscode-win-x64-${{ github.sha }}
-          restore-keys: |
-            vscode-win-x64-${{ github.sha }}
+          fetch-depth: 10
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Optional: Debug step to check cache status
-      - name: Debug - Check Cache Status
+      # # initialize and fetch submodules with a shallow clone of 10 commits
+      # - name: Initialize and Update Submodules (Shallow)
+      #   run: |
+      #     ls
+      #     git submodule status
+      #     ls ./extensions/
+      #     cd ./extensions/pearai-submodule
+
+      # Setup Python environment
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      # Setup Node.js environment
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      # - name: Cache node modules
+      #   id: cache-node-modules
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: '**/node_modules'
+      #     key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-node-
+
+      # - name: Cache Yarn dependencies
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: '**/node_modules'
+      #     key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-yarn-
+
+      - name: Setup Environment
         run: |
-          $buildCacheHit = ${{ steps.cache-restore.outputs.cache-hit }}
-          Write-Host "Raw cache-hit value: $buildCacheHit"
-          echo "build_cache_hit=$buildCacheHit" >> $env:GITHUB_OUTPUT
-          if ($buildCacheHit -eq "true") {
-            Write-Host "Cache hit!"
-          } else {
-            Write-Host "Cache miss!"
-          }
+          .\scripts\pearai\setup-environment.ps1
 
+      # # Step 2: Set Build Path
+      # - name: Set Build Path
+      #   id: set-path
+      #   run: |
+      #     $username = [Environment]::UserName
+      #     $buildOutput = "C:\Users\$username\Desktop\vscode-win32-x64"
+      #     echo "build_path=$buildOutput" >> $env:GITHUB_OUTPUT
+
+      # # Step 3: Cache the build output
+      # # sdf
+      # - name: Cache Build Output
+      #   id: cache-restore
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: ${{ steps.set-path.outputs.build_path }}
+      #     key: vscode-win-x64-build
+      #     restore-keys: |
+      #       vscode-win-x64-build
+      #     # key: vscode-win-x64-${{ github.sha }}
+      #     # restore-keys: |
+      #     #   vscode-win-x64-${{ github.sha }}
+
+      # $buildCacheHit = ${{ steps.cache-restore.outputs.cache-hit }}
       # Step 5: Create a dummy folder and a temporary text file (if cache miss)
       - name: Create Dummy Folder for Testing
-        if: ${{ !steps.cache-restore.outputs.cache-hit }}
         run: |
-          .\.github\workflows\testenv.ps1
+          $pearappCommitHash = '${{ inputs.pearapp-commit-hash }}'
+          $submoduleCommitHash = '${{ inputs.submodule-commit-hash }}'
+          $customPearappVersion = '${{ inputs.custom-pearapp-version }}'
+          $forceBuild = [System.Convert]::ToBoolean('${{ inputs.force-build }}')
+          Write-Host "pearappCommitHash: $pearappCommitHash"
+          Write-Host "submoduleCommitHash: $submoduleCommitHash"
+          Write-Host "customPearappVersion: $customPearappVersion"
+          Write-Host "forceBuild: $forceBuild"
 
-
-      # Step 5: List Desktop Contents for Debugging
-      - name: List Desktop Directory
-        run: |
-          $username = [Environment]::UserName
-          Get-ChildItem "C:\Users\$username\Desktop"
+          .\.github\workflows\testenv.ps1 `
+            -IS_GITHUB_ACTION $true `
+            -Input_PearappCommitHash $pearappCommitHash `
+            -Input_SubmoduleCommitHash $submoduleCommitHash `
+            -Input_CustomPearappVersion $customPearappVersion `
+            -Input_ForceBuild $forceBuild
 
       # Step 6: Verify Build Output and Set Output Variable
       - name: Verify Build Output
