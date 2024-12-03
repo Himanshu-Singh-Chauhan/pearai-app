@@ -36,7 +36,6 @@ jobs:
       # Checkout the repository
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 10
           submodules: recursive
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -45,7 +44,6 @@ jobs:
         run: |
           ls
           git submodule status
-          ls -la
           ls ./extensions/
           cd ./extensions/pearai-submodule
 
