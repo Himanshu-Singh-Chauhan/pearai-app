@@ -42,13 +42,8 @@ jobs:
       - name: Initialize and Update Submodules (Shallow)
         run: |
           ls
-          git submodule init
-          git pull --recurse-submodules
-          git submodule update --recursive --depth 10
-          echo "Submodule initialization and update completed."
+          ls ./extensions/
           cd ./extensions/pearai-submodule
-          echo "Submodule directory changed to: $(pwd)"
-          git status
 
       # # Setup Python environment
       # - uses: actions/setup-python@v5
