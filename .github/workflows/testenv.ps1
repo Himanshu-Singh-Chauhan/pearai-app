@@ -41,4 +41,10 @@ Write-Host "force_build: $Input_ForceBuild"
 # }
 
 cd $env:GITHUB_WORKSPACE
+$pearaiRefDir = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "/extensions/pearai-ref"
+if (Test-Path $pearaiRefDir) {
+	Write-Host "Removing pearai-ref directory"
+    Remove-Item $pearaiRefDir -Recurse -Force
+}
+
 yarn gulp vscode-win32-x64
