@@ -37,11 +37,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 10
+          submodules: true
       # initialize and fetch submodules with a shallow clone of 10 commits
       - name: Initialize and Update Submodules (Shallow)
         run: |
           ls
           git submodule init
+          git pull --recurse-submodules
           git submodule update --recursive --depth 10
           echo "Submodule initialization and update completed."
           cd ./extensions/pearai-submodule
