@@ -38,10 +38,14 @@ jobs:
         with:
           fetch-depth: 10
           submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       # initialize and fetch submodules with a shallow clone of 10 commits
       - name: Initialize and Update Submodules (Shallow)
         run: |
           ls
+          git submodule status
+          ls -la
           ls ./extensions/
           cd ./extensions/pearai-submodule
 
