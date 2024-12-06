@@ -515,6 +515,9 @@ if ($pearaiAppBuildStartTime -ne $null) {
 if ($pearaiAppBuildEndTime -ne $null) {
     Write-Host "PearAI-App Build Completed At - $($pearaiAppBuildEndTime.ToString('hh:mm tt'))"
 }
+if ($pearaiAppBuildStartTime -eq $null) {
+    Write-Host "PearAI-App Build SKIPPED" -ForegroundColor Yellow
+}
 if ($pearaiSubmoduleBuildStartTime -ne $null) {
     Write-Host "PearAI-Submodule Build Started At - $($pearaiSubmoduleBuildStartTime.ToString('hh:mm tt'))"
 }
